@@ -7862,7 +7862,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2858419989537860110, guid: b27b80cf1631d1040884df94f3cb5f72, type: 3}
       propertyPath: life
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2858419989537860110, guid: b27b80cf1631d1040884df94f3cb5f72, type: 3}
       propertyPath: textLife
