@@ -8,7 +8,7 @@ public class BossLifeBar : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
 
     [Header("Boss Reference")]
-    [SerializeField] private Transform bossTransform; // Referência direta ao Transform do boss
+    [SerializeField] private Transform bossTransform;
     [SerializeField] private Vector3 positionOffset = new Vector3(0, 2f, 0);
 
     [Header("Visual Settings")]
@@ -33,20 +33,17 @@ public class BossLifeBar : MonoBehaviour
     {
         if (!isInitialized || bossTransform == null) return;
 
-        // Atualiza a posição da barra de vida para seguir o boss
         if (mainCamera != null)
         {
             transform.position = mainCamera.WorldToScreenPoint(bossTransform.position + positionOffset);
         }
 
-        // Suaviza a transição da barra de vida
         if (fillImage.fillAmount != targetFill)
         {
             fillImage.fillAmount = Mathf.Lerp(fillImage.fillAmount, targetFill, smoothSpeed * Time.deltaTime);
         }
     }
 
-    // O script do Boss (ex: WizardController) deve chamar este método no Start() dele.
     public void Initialize(Transform targetBoss, int maxHealth)
     {
         bossTransform = targetBoss;
@@ -56,7 +53,6 @@ public class BossLifeBar : MonoBehaviour
         UpdateVisibility(maxHealth, maxHealth); // Usa o método de visibilidade
     }
 
-    // O script do Boss deve chamar este método sempre que a vida dele mudar.
     public void UpdateLifeBar(int currentHealth, int maxHealth)
     {
         if (!isInitialized) return;

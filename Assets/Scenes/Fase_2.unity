@@ -122,86 +122,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &66841546
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 66841547}
-  - component: {fileID: 66841549}
-  - component: {fileID: 66841548}
-  m_Layer: 0
-  m_Name: Range
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &66841547
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66841546}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1110100579}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &66841548
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66841546}
-  m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0.4036828, y: -0.063466355}
-  serializedVersion: 2
-  m_Radius: 0.43058378
---- !u!114 &66841549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66841546}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97b508d3cb1bb534b802179933acfe67, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &222676541
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2057,6 +1977,18 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6676827876574677707, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: m_UiScaleMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6676827876574677707, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: m_ReferenceResolution.x
+      value: 1920
+      objectReference: {fileID: 0}
+    - target: {fileID: 6676827876574677707, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: m_ReferenceResolution.y
+      value: 1080
+      objectReference: {fileID: 0}
     - target: {fileID: 7126920863977770835, guid: aad0e515ab063d64998481128f3f640f, type: 3}
       propertyPath: messages.Array.size
       value: 3
@@ -2376,7 +2308,6 @@ Transform:
   m_LocalScale: {x: 8.171439, y: 8.514094, z: 1.0986071}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 66841547}
   - {fileID: 967437071}
   m_Father: {fileID: 545379354}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2500,16 +2431,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d118ae932fc6f9a46b21fb0aa7758c94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  life: 8
-  speed: 4
   player: {fileID: 468876471}
-  range: {fileID: 66841546}
   maxLife: 12
-  bossLifeBar: {fileID: 1307011114}
+  speed: 5
+  attackCooldown: 1.6
+  attackDistance: 3.5
   hurtCooldown: 0.5
-  attackCooldown: 1.3
-  attack1Duration: 1
-  attack2Duration: 1
+  bossLifeBar: {fileID: 1307011114}
 --- !u!224 &1210751265 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1822326512976681040, guid: 0cffb9538f2d6364da81095082d86537, type: 3}

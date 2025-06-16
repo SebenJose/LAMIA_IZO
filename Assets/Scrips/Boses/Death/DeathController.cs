@@ -165,7 +165,6 @@ public class DeathController : MonoBehaviour
                 deathCollider.enabled = false;
                 if (rangeObject != null) rangeObject.SetActive(false);
 
-                // LÓGICA DE MORTE COMPLETA E CORRIGIDA
                 TriggerEndDialogue();
                 if (bossLifeBar != null)
                 {

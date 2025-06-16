@@ -1,156 +1,183 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class WizardController : MonoBehaviour
 {
-    private CapsuleCollider2D wizardCollider;
-    private Animator anim;
-    private float sideSign;
-    private string side;
+    private enum BossState { Idle, Chase, Attack, Hurt, Dead }
+    private BossState currentState;
 
-    public int life;
-    public float speed;
+    private Animator anim;
+    private CapsuleCollider2D wizardCollider;
     public Transform player;
-    public GameObject range;
 
     public int maxLife = 12;
+    private int life;
 
-    [SerializeField] private BossLifeBar bossLifeBar;
+    public float speed = 2f;
 
-    private bool isTakingDamage = false;
-    [SerializeField] private float hurtCooldown = 0.5f;
-    private int previousLife;
+    public float attackCooldown = 2f;
+    public float attackDistance = 1.5f;
 
-    [SerializeField] private float attackCooldown = 2.0f;
     private bool canAttack = true;
+    private bool isTakingDamage = false;
 
-    // Durações das animações
-    [SerializeField] private float attack1Duration = 1f;
-    [SerializeField] private float attack2Duration = 1f;
+    private bool isNextAttackOne = true;
+
+    [SerializeField] private float hurtCooldown = 0.5f;
+    [SerializeField] private BossLifeBar bossLifeBar;
 
     void Start()
     {
-        // --- CORREÇÃO 1: Inicializando a vida e a barra de vida ---
-        life = maxLife; // Define a vida inicial como a vida máxima
-        previousLife = life;
-        wizardCollider = GetComponent<CapsuleCollider2D>();
         anim = GetComponent<Animator>();
-        anim.SetBool("IsWalk", false);
+        wizardCollider = GetComponent<CapsuleCollider2D>();
+        life = maxLife;
 
-        // Diz para a barra de vida começar a funcionar para o Wizard
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player").transform;
+        }
+
         if (bossLifeBar != null)
         {
             bossLifeBar.Initialize(this.transform, maxLife);
         }
+
+        ChangeState(BossState.Chase);
     }
 
     void Update()
     {
-        if (life <= 0)
+        if (player == null || currentState == BossState.Dead || currentState == BossState.Hurt || currentState == BossState.Attack)
         {
-            this.enabled = false;
-            wizardCollider.enabled = false;
-            range.SetActive(false);
-            anim.Play("Die", -1);
-            anim.SetBool("IsWalk", false);
-            TriggerEndDialogue();
-            // Garante que a barra de vida apague ao morrer
-            if (bossLifeBar != null) bossLifeBar.UpdateLifeBar(0, maxLife);
             return;
         }
 
-        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Attack1") ||
-            anim.GetCurrentAnimatorStateInfo(0).IsName("Attack2") ||
-            anim.GetCurrentAnimatorStateInfo(0).IsName("Hurt"))
+        switch (currentState)
         {
-            anim.SetBool("IsWalk", false);
-            return;
-        }
-
-        sideSign = Mathf.Sign(transform.position.x - player.position.x);
-
-        if (Mathf.Abs(sideSign) == 1.0f)
-        {
-            side = sideSign == 1.0f ? "right" : "left";
-        }
-
-        switch (side)
-        {
-            case "right":
-                transform.eulerAngles = new Vector3(0f, 180f, 0f);
+            case BossState.Idle:
+                if (Vector2.Distance(transform.position, player.position) > attackDistance)
+                {
+                    ChangeState(BossState.Chase);
+                }
+                else if (canAttack)
+                {
+                    ChangeState(BossState.Attack);
+                }
                 break;
-            case "left":
-                transform.eulerAngles = new Vector3(0f, 0f, 0f);
+
+            case BossState.Chase:
+                ChasePlayer();
+                if (Vector2.Distance(transform.position, player.position) <= attackDistance)
+                {
+                    ChangeState(BossState.Idle);
+                }
                 break;
         }
+    }
 
-        if (Vector2.Distance(transform.position, player.position) > 0.5f)
-        {
-            transform.position = Vector2.MoveTowards(transform.position,
-                new Vector2(player.position.x, transform.position.y), speed * Time.deltaTime);
-            anim.SetBool("IsWalk", true);
-        }
+    void UpdateRotation()
+    {
+        if (player == null) return;
+
+        if (player.position.x > transform.position.x)
+            transform.eulerAngles = new Vector3(0f, 0f, 0f);
         else
+            transform.eulerAngles = new Vector3(0f, 180f, 0f);
+    }
+
+    void ChangeState(BossState newState)
+    {
+        if (currentState == newState) return;
+        currentState = newState;
+
+        switch (newState)
         {
-            anim.SetBool("IsWalk", false);
+            case BossState.Idle:
+                anim.SetBool("IsWalk", false);
+                break;
+            case BossState.Chase:
+                anim.SetBool("IsWalk", true);
+                break;
+            case BossState.Attack:
+                StartCoroutine(AttackRoutine());
+                break;
+            case BossState.Hurt:
+                StartCoroutine(HurtRoutine());
+                break;
+            case BossState.Dead:
+                life = 0;
+                anim.Play("Die");
+                wizardCollider.enabled = false;
+                StopAllCoroutines();
+                TriggerEndDialogue();
+                break;
         }
+    }
+
+    void ChasePlayer()
+    {
+        if (player == null) return;
+        UpdateRotation();
+        transform.position += new Vector3((player.position - transform.position).normalized.x, 0, 0) * speed * Time.deltaTime;
     }
 
     public void TakeDamage(int damage)
     {
-        if (isTakingDamage || life <= 0) return;
+        if (isTakingDamage || currentState == BossState.Dead) return;
 
         life -= damage;
-        if (life < 0) life = 0; // Garante que a vida não seja negativa
+        if (bossLifeBar != null)
+            bossLifeBar.UpdateLifeBar(life, maxLife);
 
+        if (life <= 0)
+        {
+            ChangeState(BossState.Dead);
+        }
+        else
+        {
+            ChangeState(BossState.Hurt);
+        }
+    }
+
+    IEnumerator HurtRoutine()
+    {
         isTakingDamage = true;
         anim.SetTrigger("Hurt");
-        StartCoroutine(ResetDamageState());
-
-        // --- CORREÇÃO 2: Atualizando a barra de vida com a vida atual e máxima ---
-        if (bossLifeBar != null)
-        {
-            bossLifeBar.UpdateLifeBar(life, maxLife);
-        }
-    }
-
-    private IEnumerator ResetDamageState()
-    {
         yield return new WaitForSeconds(hurtCooldown);
         isTakingDamage = false;
-    }
 
-    public void TriggerAttack()
-    {
-        if (canAttack && life > 0)
+        if (currentState != BossState.Dead)
         {
-            StartCoroutine(AttackSequence());
+            ChangeState(BossState.Idle);
         }
     }
 
-    private IEnumerator AttackSequence()
+    IEnumerator AttackRoutine()
     {
         canAttack = false;
+        UpdateRotation();
 
-        // Primeiro ataque
-        anim.Play("Attack1");
-        yield return new WaitForSeconds(attack1Duration);
+        if (isNextAttackOne)
+        {
+            anim.SetTrigger("Attack1");
+        }
+        else
+        {
+            anim.SetTrigger("Attack2");
+        }
 
-        // Segundo ataque
-        anim.Play("Attack2");
-        yield return new WaitForSeconds(attack2Duration);
+        isNextAttackOne = !isNextAttackOne;
 
-        // Cooldown após sequência
-        StartCoroutine(AttackCooldown());
-    }
-
-    private IEnumerator AttackCooldown()
-    {
         yield return new WaitForSeconds(attackCooldown);
         canAttack = true;
+
+        if (currentState != BossState.Dead)
+        {
+            ChangeState(BossState.Idle);
+        }
     }
 
-    private void TriggerEndDialogue()
+    void TriggerEndDialogue()
     {
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas != null)
@@ -160,14 +187,6 @@ public class WizardController : MonoBehaviour
             {
                 dialogue.TriggerDialogueFromInspector();
             }
-            else
-            {
-                Debug.LogWarning("TutorialDialogue não encontrado dentro do Canvas!");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Canvas não encontrado na cena!");
         }
     }
 }

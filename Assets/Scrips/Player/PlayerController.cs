@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro; // Usado para TextMeshPro, se você tiver algum componente de UI TextMeshPro no PlayerController
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
@@ -43,15 +43,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashCooldownTimer = 0f;
     private float originalGravity;
 
-    // Canva - Delegado para notificar mudanças na vida (se ainda estiver usando)
     public delegate void LifeChangedDelegate(int newLife);
     public static event LifeChangedDelegate OnLifeChanged;
 
-    // Referência ao DeathMenuController.
-    // É crucial que esta referência seja preenchida no Inspector!
     [SerializeField] private DeathMenuController deathMenu;
-
-    // Tempo de espera antes de exibir o menu de morte (para a animação de morte do player)
     [SerializeField] private float deathScreenDelay = 2f;
 
 
@@ -67,10 +62,6 @@ public class PlayerController : MonoBehaviour
         if (deathMenu == null)
         {
             deathMenu = FindObjectOfType<DeathMenuController>();
-            if (deathMenu == null)
-            {
-                Debug.LogError("ERRO: DeathMenuController não atribuído no Inspector do PlayerController e não encontrado na cena. O menu de morte não funcionará!");
-            }
         }
     }
 
@@ -377,7 +368,6 @@ public class PlayerController : MonoBehaviour
         isTakingDamage = false;
     }
 
-    // Método principal de morte do jogador
     private void Die()
     {
         if (isDead) return;
@@ -388,27 +378,20 @@ public class PlayerController : MonoBehaviour
         rb.gravityScale = 0;
         rb.velocity = Vector2.zero;
 
-        // INICIA UMA COROUTINE NO PLAYERCONTROLLER PARA GERENCIAR O DELAY E O FADE-IN
         StartCoroutine(HandleDeathSequence());
     }
 
-    // NOVO: Coroutine para gerenciar a sequência de morte (delay + fade-in)
     private IEnumerator HandleDeathSequence()
     {
-        // 1. Espera o tempo especificado para a animação de morte do player
         yield return new WaitForSeconds(deathScreenDelay);
 
-        // 2. Agora, tenta exibir o menu de morte com fade-in
         if (deathMenu != null)
         {
-            // O PlayerController agora chama diretamente a Coroutine de fade-in do DeathMenuController.
-            // Isso garante que a Coroutine seja iniciada em um objeto ativo (o PlayerController).
-            yield return StartCoroutine(deathMenu.StartFadeInDeathMenu()); // Chamando o novo método
+            yield return StartCoroutine(deathMenu.StartFadeInDeathMenu());
         }
         else
         {
-            Debug.LogError("DeathMenuController não atribuído no Inspector do PlayerController! O menu de morte NÃO será exibido e o jogo pode travar se o Time.timeScale for definido para 0 em outro lugar.");
-            Time.timeScale = 1f; // Garante que o jogo não fique parado se o menu não aparecer
+            Time.timeScale = 1f;
         }
     }
 
