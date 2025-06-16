@@ -20,15 +20,11 @@ public class TutorialDialogue : MonoBehaviour
     {
         // Verifica se é uma cena que deve iniciar o diálogo automaticamente
         if ((SceneManager.GetActiveScene().name == "Introducion" || SceneManager.GetActiveScene().name == "Final") && messages.Length > 0)
-        {
-            // Se sim, inicia a coroutine que vai ativar o painel APÓS o delay
+        { 
             StartCoroutine(StartIntroDialogue());
         }
         else
         {
-            // Se não é uma cena de diálogo automático, ou se não há mensagens,
-            // garante que o painel esteja desativado.
-            // Isso é crucial para que o painel não apareça em outras cenas sem necessidade.
             panel.SetActive(false);
         }
     }
@@ -62,6 +58,9 @@ public class TutorialDialogue : MonoBehaviour
                         break;
                     case "Fase_3":
                         transitionControler.TransitionToScene("Final");
+                        break;
+                    case "Final":
+                        transitionControler.TransitionToScene("SceneFinal");
                         break;
                 }
             }

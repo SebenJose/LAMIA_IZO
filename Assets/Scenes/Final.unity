@@ -2304,7 +2304,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7126920863977770835, guid: aad0e515ab063d64998481128f3f640f, type: 3}
       propertyPath: messages.Array.size
-      value: 3
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7126920863977770835, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: messages.Array.data[0]
+      value: "Voc\xEA realmente chegou at\xE9 aqui, parab\xE9ns! Espero que tenha
+        gostado desta experi\xEAncia."
+      objectReference: {fileID: 0}
+    - target: {fileID: 7126920863977770835, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: messages.Array.data[1]
+      value: "E essa \xE9 a primeira de muitas! Muito obrigado por ter participado.
+        Eu espero voc\xEA na pr\xF3xima."
+      objectReference: {fileID: 0}
+    - target: {fileID: 7126920863977770835, guid: aad0e515ab063d64998481128f3f640f, type: 3}
+      propertyPath: messages.Array.data[2]
+      value: "E essa \xE9 a primeira de muitas, muito obrigado por ter participado
+        desta experiencia IZO \xE9 lhe espero na proxima."
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

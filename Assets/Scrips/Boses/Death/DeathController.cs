@@ -15,17 +15,28 @@ public class DeathController : MonoBehaviour
     [Header("Referências da UI")]
     [SerializeField] private BossLifeBar bossLifeBar;
 
-    [Header("Configurações de Ataque")]
-    public float attackCooldown = 2f; // Cooldown do ataque físico
+    [Header("Configurações de Ataque Físico")]
+    public float attackCooldown = 2f;
     public GameObject rangeObject;
     private float attackDistance = 1.5f;
     private bool canAttack = true;
 
-    [Header("Configurações da Magia Global")]
+    [Header("Configurações da Magia")]
     public GameObject spellPrefab;
     public float spellYOffset = 2f;
-    [SerializeField] private float globalSpellCooldown = 8f; // Tempo entre cada magia
-    [SerializeField] private float initialSpellDelay = 4f;  // Tempo até a primeira magia
+    [Tooltip("Distância a partir da qual o chefe prefere usar magia.")]
+    public float spellRange = 5f;
+    [Tooltip("Duração da animação/preparação da magia.")]
+    public float spellCastTime = 1.5f;
+    [Tooltip("Tempo de recarga da magia após ser usada.")]
+    public float spellCooldown = 5f;
+    private bool canCastSpell = true;
+    private int physicalAttackCount = 0;
+
+    [Header("Configurações de Combate")]
+    [Tooltip("Tempo em segundos que o chefe espera no início da fase antes de atacar.")]
+    public float initialCombatDelay = 3.0f;
+    private bool isCombatActive = false;
 
     private enum BossState { Idle, Walk, Attack, Hurt, Die, Casting }
     private BossState currentState = BossState.Idle;
@@ -35,40 +46,96 @@ public class DeathController : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         deathCollider = GetComponent<CapsuleCollider2D>();
+    }
+
+    void OnEnable()
+    {
+        ResetBossState();
+    }
+
+    void ResetBossState()
+    {
         player = GameObject.FindGameObjectWithTag("Player").transform;
 
-        life = maxLife;
+        bossLifeBar = FindObjectOfType<BossLifeBar>();
         if (bossLifeBar != null)
         {
             bossLifeBar.Initialize(this.transform, maxLife);
         }
 
-        // Inicia a rotina da magia global
-        StartCoroutine(GlobalSpellRoutine());
+        life = maxLife;
+        currentState = BossState.Idle;
+        canAttack = true;
+        deathCollider.enabled = true;
+        physicalAttackCount = 0;
+        canCastSpell = true;
+        isCombatActive = false;
+
+        if (anim != null)
+        {
+            anim.Play("Idle");
+            anim.SetBool("IsWalk", false);
+        }
+
+        StopAllCoroutines();
+        StartCoroutine(StartCombatDelay());
+    }
+
+    IEnumerator StartCombatDelay()
+    {
+        yield return new WaitForSeconds(initialCombatDelay);
+        isCombatActive = true;
     }
 
     void Update()
     {
+        if (!isCombatActive)
+        {
+            return;
+        }
+
         if (life <= 0 && currentState != BossState.Die)
         {
             ChangeState(BossState.Die);
             return;
         }
 
-        // Ignora a lógica principal se estiver em um estado que não permite interrupção
         if (currentState == BossState.Die || currentState == BossState.Hurt || currentState == BossState.Attack || currentState == BossState.Casting)
         {
             return;
         }
 
-        if (currentState == BossState.Idle)
+        DecideNextAction();
+    }
+
+    void DecideNextAction()
+    {
+        if (player == null) return;
+
+        float distance = Vector2.Distance(transform.position, player.position);
+
+        if (canCastSpell && (physicalAttackCount >= 2 || distance > spellRange))
         {
-            ChangeState(BossState.Walk);
+            StartCoroutine(SpellRoutine());
+            return;
         }
 
-        if (currentState == BossState.Walk)
+        if (distance <= attackDistance && canAttack)
         {
-            WalkToPlayer();
+            ChangeState(BossState.Attack);
+            return;
+        }
+
+        if (distance > attackDistance)
+        {
+            ChangeState(BossState.Walk);
+            UpdateRotation();
+            Vector2 direction = (player.position - transform.position).normalized;
+            transform.position += new Vector3(direction.x, 0, 0) * speed * Time.deltaTime;
+        }
+        else
+        {
+            ChangeState(BossState.Idle);
         }
     }
 
@@ -92,10 +159,13 @@ public class DeathController : MonoBehaviour
                 StartCoroutine(HurtRoutine());
                 break;
             case BossState.Die:
+                isCombatActive = false;
                 StopAllCoroutines();
                 anim.Play("Die");
                 deathCollider.enabled = false;
                 if (rangeObject != null) rangeObject.SetActive(false);
+
+                // LÓGICA DE MORTE COMPLETA E CORRIGIDA
                 TriggerEndDialogue();
                 if (bossLifeBar != null)
                 {
@@ -107,88 +177,59 @@ public class DeathController : MonoBehaviour
         }
     }
 
-    void WalkToPlayer()
-    {
-        if (currentState != BossState.Walk) return;
-
-        float distance = Vector2.Distance(transform.position, player.position);
-
-        if (distance > attackDistance)
-        {
-            UpdateRotation();
-            Vector2 direction = (player.position - transform.position).normalized;
-            transform.position += new Vector3(direction.x, 0, 0) * speed * Time.deltaTime;
-        }
-        else if (canAttack) // Se chegar perto, usa o ataque físico
-        {
-            ChangeState(BossState.Attack);
-        }
-    }
-
     void UpdateRotation()
     {
+        if (player == null) return;
+
         if (player.position.x > transform.position.x)
-            transform.eulerAngles = new Vector3(0f, 180f, 0f); // Direita
+            transform.eulerAngles = new Vector3(0f, 180f, 0f);
         else
-            transform.eulerAngles = new Vector3(0f, 0f, 0f); // Esquerda
+            transform.eulerAngles = new Vector3(0f, 0f, 0f);
     }
 
-    // A função PlayerInRange não é mais usada
-    bool PlayerInRange()
+    IEnumerator AttackRoutine()
     {
-        if (player == null) return false; 
-        return Vector2.Distance(transform.position, player.position) < 8f; 
-    }
-
-    public void StartCombat()
-    {
-        if (currentState == BossState.Idle)
-        {
-            ChangeState(BossState.Walk);
-        }
-    }
-
-    IEnumerator AttackRoutine() // Rotina do ataque físico
-    {
-        canAttack = false; 
-        anim.Play("Attack"); 
+        canAttack = false;
+        anim.Play("Attack");
         yield return new WaitForSeconds(attackCooldown);
+        physicalAttackCount++;
         canAttack = true;
-        ChangeState(BossState.Idle);
+        if (life > 0) ChangeState(BossState.Idle);
     }
 
-    IEnumerator GlobalSpellRoutine()
+    IEnumerator SpellRoutine()
     {
-        yield return new WaitForSeconds(initialSpellDelay); 
+        canCastSpell = false;
 
-        while (life > 0)
+        ChangeState(BossState.Casting);
+        UpdateRotation();
+        anim.Play("Cast");
+
+        yield return new WaitForSeconds(spellCastTime);
+
+        if (player != null)
         {
-            yield return new WaitForSeconds(globalSpellCooldown);
-
-            if (currentState == BossState.Idle || currentState == BossState.Walk)
-            {
-                BossState stateBeforeCast = currentState;
-                ChangeState(BossState.Casting);
-                anim.Play("Cast");
-
-                yield return new WaitForSeconds(1f);
-
-                if (player != null)
-                {
-                    Vector2 spellPos = new Vector2(player.position.x, player.position.y + spellYOffset);
-                    Instantiate(spellPrefab, spellPos, Quaternion.identity); 
-                }
-
-                yield return new WaitForSeconds(0.5f);
-
-                ChangeState(stateBeforeCast);
-            }
+            Vector2 spellPos = new Vector2(player.position.x, player.position.y + spellYOffset);
+            Instantiate(spellPrefab, spellPos, Quaternion.identity);
         }
+
+        physicalAttackCount = 0;
+
+        StartCoroutine(SpellCooldownManager());
+
+        if (life > 0) ChangeState(BossState.Idle);
+    }
+
+    IEnumerator SpellCooldownManager()
+    {
+        yield return new WaitForSeconds(spellCooldown);
+        canCastSpell = true;
     }
 
     public void TakeDamage(int damage)
     {
-        if (currentState == BossState.Die || currentState == BossState.Hurt) return;
+        if (!isCombatActive || currentState == BossState.Die || currentState == BossState.Hurt) return;
+
         life -= damage;
         if (life < 0) life = 0;
 
@@ -206,12 +247,16 @@ public class DeathController : MonoBehaviour
     IEnumerator HurtRoutine()
     {
         anim.SetTrigger("Hurt");
-        BossState stateBeforeHurt = currentState;
         anim.SetBool("IsWalk", false);
         yield return new WaitForSeconds(hurtCooldown);
 
         if (life > 0)
             ChangeState(BossState.Idle);
+    }
+
+    public void StartCombat()
+    {
+        isCombatActive = true;
     }
 
     private void TriggerEndDialogue()

@@ -288,6 +288,7 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 2
   dashCooldownTimer: 0
+  deathMenu: {fileID: 1031148191467623511, guid: 5941d14654449bb428af8122c3c4215b, type: 3}
 --- !u!1 &6615502405827671679
 GameObject:
   m_ObjectHideFlags: 0

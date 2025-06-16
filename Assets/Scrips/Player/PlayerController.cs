@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
+using TMPro; // Usado para TextMeshPro, se você tiver algum componente de UI TextMeshPro no PlayerController
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,19 +10,19 @@ public class PlayerController : MonoBehaviour
     private CapsuleCollider2D colliderPlayer;
     private float moveX;
 
-    //variavies para o combo de ataque
+    // Variaveis para o combo de ataque
     private int comboStep = 0;
     private float comboTimer = 0f;
     [SerializeField] private float comboWindow = 0.5f;
     private bool canCombo = false;
     private bool comboQueued = false;
 
-    //variaveis para a defesa
+    // Variaveis para a defesa
     public bool isDefending;
-    [SerializeField] private float defenseCooldown = 0.5f; //esta alterado na unity cooldown maior para balanceamento
+    [SerializeField] private float defenseCooldown = 0.5f; // Esta alterado na unity cooldown maior para balanceamento
     private float defenseTimer = 0f;
 
-    //player variables
+    // Player variables
     public float speed;
     public int addJump;
     public bool isGrounded;
@@ -35,35 +35,47 @@ public class PlayerController : MonoBehaviour
 
     private bool isDead = false;
 
-    //variaveis para o dash
+    // Variaveis para o dash
     [SerializeField] private float dashForce = 50;
     [SerializeField] private float dashDuration = 0.25f;
     [SerializeField] private float dashCooldown = 1f;
-    //[SerializeField] private float doubleTapTime = 0.3f;
     private bool isDashing = false;
     [SerializeField] private float dashCooldownTimer = 0f;
-    //[SerializeField] private int dashDirection = 1;
     private float originalGravity;
 
-    //Canva
+    // Canva - Delegado para notificar mudanças na vida (se ainda estiver usando)
     public delegate void LifeChangedDelegate(int newLife);
     public static event LifeChangedDelegate OnLifeChanged;
+
+    // Referência ao DeathMenuController.
+    // É crucial que esta referência seja preenchida no Inspector!
+    [SerializeField] private DeathMenuController deathMenu;
+
+    // Tempo de espera antes de exibir o menu de morte (para a animação de morte do player)
+    [SerializeField] private float deathScreenDelay = 2f;
+
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponentInChildren<Animator>();
-        rb.gravityScale = rb.gravityScale;
         colliderPlayer = GetComponent<CapsuleCollider2D>();
 
         previousLife = life;
         OnLifeChanged?.Invoke(life);
-    }
 
+        if (deathMenu == null)
+        {
+            deathMenu = FindObjectOfType<DeathMenuController>();
+            if (deathMenu == null)
+            {
+                Debug.LogError("ERRO: DeathMenuController não atribuído no Inspector do PlayerController e não encontrado na cena. O menu de morte não funcionará!");
+            }
+        }
+    }
 
     void Update()
     {
-
         if (isDead) return;
 
         moveX = Input.GetAxisRaw("Horizontal");
@@ -74,9 +86,8 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        jumpPressed = Input.GetButtonDown("Jump"); //vai capturar o pulo
+        jumpPressed = Input.GetButtonDown("Jump");
 
-        //ataque
         if (comboStep > 0)
         {
             comboTimer -= Time.deltaTime;
@@ -100,7 +111,6 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        //defesa
         if (Input.GetMouseButton(1))
         {
             if (defenseTimer <= 0 && !isDefending && isGrounded)
@@ -118,36 +128,24 @@ public class PlayerController : MonoBehaviour
             defenseTimer -= Time.deltaTime;
         }
 
-        //dash
         if (Input.GetKeyDown(KeyCode.LeftAlt))
         {
-
-            if (Input.GetKey(KeyCode.A))
-            {
-                DashNaDirecaoAtual();
-            }
-            else if (Input.GetKey(KeyCode.D))
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
             {
                 DashNaDirecaoAtual();
             }
         }
 
-        // Atualiza o cooldown
         if (dashCooldownTimer > 0)
         {
             dashCooldownTimer -= Time.deltaTime;
         }
 
         if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Attacking") &&
-        !anim.GetCurrentAnimatorStateInfo(0).IsName("Attacking2"))
+            !anim.GetCurrentAnimatorStateInfo(0).IsName("Attacking2"))
         {
             if (comboStep > 0 && comboTimer <= 0f)
                 ResetCombo();
-        }
-
-        if (comboStep > 0 && comboTimer <= 0f)
-        {
-            ResetCombo();
         }
 
         if (life < previousLife && life > 0)
@@ -157,7 +155,6 @@ public class PlayerController : MonoBehaviour
         }
 
         previousLife = life;
-
     }
 
     private void FixedUpdate()
@@ -170,7 +167,6 @@ public class PlayerController : MonoBehaviour
         {
             if (isGrounded)
             {
-                //addJump = 1;
                 Jump();
             }
             else if (addJump > 0)
@@ -180,27 +176,25 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        jumpPressed = false; // reseta o input após usar
-}
+        jumpPressed = false;
+    }
 
     void Move()
     {
-        if(isDashing || isDead) return;
+        if (isDashing || isDead) return;
 
         bool isRunning = Input.GetKey(KeyCode.LeftShift) && moveX != 0;
         float currentSpeed = isRunning ? speed * 2 : speed;
 
         rb.velocity = new Vector2(moveX * currentSpeed, rb.velocity.y);
 
-
-        //altera a direção do personagem
         if (moveX > 0)
         {
-            transform.eulerAngles = new Vector3(0f, 0f, 0f); //direita
+            transform.eulerAngles = new Vector3(0f, 0f, 0f);
         }
         else if (moveX < 0)
         {
-            transform.eulerAngles = new Vector3(0f, 180f, 0f); //esquerda
+            transform.eulerAngles = new Vector3(0f, 180f, 0f);
         }
 
         anim.SetBool("IsWalk", moveX != 0 && !isRunning);
@@ -212,25 +206,23 @@ public class PlayerController : MonoBehaviour
         if (isDead) return;
 
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        
+
         anim.Play("Jump", 0, 0f);
 
         anim.SetBool("IsJump", true);
 
         ResetCombo();
-
     }
 
     void Attack()
     {
-
         if (isDashing) return;
 
         if (comboStep == 0 || comboTimer > 0f)
         {
-            if(comboStep >= 2)
+            if (comboStep >= 2)
             {
-                return; // Limita o número de ataques no combo
+                return;
             }
 
             comboStep++;
@@ -244,11 +236,9 @@ public class PlayerController : MonoBehaviour
                 case 1:
                     attackAnimation = "Attacking";
                     break;
-
                 case 2:
                     attackAnimation = "Attacking2";
                     break;
-
             }
 
             if (!string.IsNullOrEmpty(attackAnimation))
@@ -270,6 +260,7 @@ public class PlayerController : MonoBehaviour
     {
         canCombo = true;
     }
+
     void ResetCombo()
     {
         comboStep = 0;
@@ -278,14 +269,13 @@ public class PlayerController : MonoBehaviour
         comboQueued = false;
         anim.SetInteger("ComboStep", comboStep);
     }
+
     public void TryContinueCombo()
     {
-
         canCombo = false;
 
         if (comboQueued)
         {
-
             comboQueued = false;
             comboStep++;
             comboTimer = comboWindow;
@@ -317,7 +307,7 @@ public class PlayerController : MonoBehaviour
         isDefending = true;
         anim.SetBool("IsDefend", true);
         speed = speed / 2;
-        ResetCombo ();
+        ResetCombo();
     }
 
     void StopDefense()
@@ -327,18 +317,18 @@ public class PlayerController : MonoBehaviour
         speed = speed * 2;
         defenseTimer = defenseCooldown;
     }
+
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.tag == "Ground")
+        if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true;
             anim.SetBool("IsJump", false);
-
             addJump = 1;
         }
     }
 
-    void TryDash (int direction)
+    void TryDash(int direction)
     {
         if (dashCooldownTimer <= 0 && !isDashing)
         {
@@ -371,10 +361,11 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (life < 0 || isTakingDamage || isDefending) return;
+        if (isDead || isTakingDamage || isDefending) return;
 
         life -= damage;
         OnLifeChanged?.Invoke(life);
+
         isTakingDamage = true;
         anim.SetTrigger("Hurt");
         StartCoroutine(ResetDamageState());
@@ -382,20 +373,43 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator ResetDamageState()
     {
-        isTakingDamage = true;
         yield return new WaitForSeconds(0.5f);
         isTakingDamage = false;
     }
-    
+
+    // Método principal de morte do jogador
     private void Die()
     {
         if (isDead) return;
         isDead = true;
+
         anim.SetTrigger("Die");
         colliderPlayer.enabled = false;
         rb.gravityScale = 0;
         rb.velocity = Vector2.zero;
-        //this.enabled = false;
+
+        // INICIA UMA COROUTINE NO PLAYERCONTROLLER PARA GERENCIAR O DELAY E O FADE-IN
+        StartCoroutine(HandleDeathSequence());
+    }
+
+    // NOVO: Coroutine para gerenciar a sequência de morte (delay + fade-in)
+    private IEnumerator HandleDeathSequence()
+    {
+        // 1. Espera o tempo especificado para a animação de morte do player
+        yield return new WaitForSeconds(deathScreenDelay);
+
+        // 2. Agora, tenta exibir o menu de morte com fade-in
+        if (deathMenu != null)
+        {
+            // O PlayerController agora chama diretamente a Coroutine de fade-in do DeathMenuController.
+            // Isso garante que a Coroutine seja iniciada em um objeto ativo (o PlayerController).
+            yield return StartCoroutine(deathMenu.StartFadeInDeathMenu()); // Chamando o novo método
+        }
+        else
+        {
+            Debug.LogError("DeathMenuController não atribuído no Inspector do PlayerController! O menu de morte NÃO será exibido e o jogo pode travar se o Time.timeScale for definido para 0 em outro lugar.");
+            Time.timeScale = 1f; // Garante que o jogo não fique parado se o menu não aparecer
+        }
     }
 
     void DashNaDirecaoAtual()
@@ -411,7 +425,7 @@ public class PlayerController : MonoBehaviour
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.tag == "Ground")
+        if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = false;
         }
